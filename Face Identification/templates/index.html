@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DeepFace Recognition</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+    <h1>Face Recognition App</h1>
+    <div class="upload-section">
+        <h3>Upload an Image</h3>
+        <form id="uploadForm">
+            <input type="file" name="image" accept="image/*">
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+
+    <div class="webcam-section">
+        <h3>Upload through Webcam</h3>
+        <video id="webcam" autoplay></video><br>
+        <button id="captureBtn">Capture & Upload</button>
+    </div>
+
+    <div id="resultSection">
+        <h3>Result</h3>
+        <p id="resultText"></p>
+        <img id="resultImage">
+    </div>
+</div>
+
+<script>
+const form = document.getElementById("uploadForm");
+form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    let formData = new FormData(form);
+
+    let res = await fetch("/upload", { method: "POST", body: formData });
+    let data = await res.json();
+    showResult(data);
+});
+
+// Webcam handling
+const video = document.getElementById('webcam');
+navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => video.srcObject = stream);
+
+document.getElementById("captureBtn").addEventListener("click", async () => {
+    let canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+
+    let imageData = canvas.toDataURL("image/jpeg");
+    let formData = new FormData();
+    formData.append("webcam_image", imageData);
+
+    let res = await fetch("/upload", { method: "POST", body: formData });
+    let data = await res.json();
+    showResult(data);
+});
+
+function showResult(data) {
+    if (data.error) {
+        document.getElementById("resultText").innerText = "Error: " + data.error;
+    } else {
+        document.getElementById("resultText").innerText =
+            `Matched: ${data.match} | Confidence: ${data.confidence}%`;
+        document.getElementById("resultImage").src = data.image_path;
+    }
+}
+</script>
+</body>
+</html>
